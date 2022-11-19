@@ -1,0 +1,5 @@
+
+b+tree over-head 줄이기 (성능개선)
+	⁃	순서대로 insert 했을 때 높이가 늘어난다 -> 해결방법 구하기
+	⁃	삽입과 삭제가 빈번 -> split merge, delay merge 로 해결가능
+	⁃	search algorithm 개선할 수도 있다.
