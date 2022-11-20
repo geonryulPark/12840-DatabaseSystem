@@ -6,6 +6,61 @@ page * rt = NULL; //root is declared as global
 
 int fd = -1; //fd is declared as global
 
+record buffer[BUFFER_MAX+1];
+int bufferSize = 0;
+
+int compare(const void *one, const void *two) {
+    record *ptOne = (record *)one;
+    record *ptTwo = (record *)two;
+
+    if (ptOne->key > ptTwo->key)
+        return 1;
+    else if (ptOne->key < ptTwo->key) 
+        return -1;
+    else return 0;
+}
+
+bool isInBuffer(const record *records, int size, int64_t key) {
+    for (int i = 0; i < size; i++) {
+        if (key == records[i].key) return true;
+    }
+    return false;
+}
+
+int bf_insert(int64_t key, char *value) {
+    int ret = -1;
+    if (bufferSize < BUFFER_MAX) {
+        // just put in buffer
+        // 중복은 넣지 않아야 한다.
+        if (!isInBuffer(buffer, bufferSize, key)) {
+            buffer[bufferSize].key = key;
+            strcpy(buffer[bufferSize].value, value);
+            bufferSize++;
+            ret = 0;
+        }
+    }
+    if (bufferSize == BUFFER_MAX) {
+        // flush to b+tree
+        qsort(buffer, bufferSize, sizeof(record), compare);
+        bufferSize--; // index로 활용하기 위해서 1을 감소시켰다.
+        int i = 0;
+        while (i <= bufferSize) {
+            printf("i : %d, key : %lld, value : %s\n", i, buffer[i].key, buffer[i].value);
+            fflush(stdout);
+            ret = db_insert(buffer[i].key, buffer[i].value);
+            i += 2;
+        }
+        int j = bufferSize % 2 ? bufferSize : bufferSize - 1; // 개수가 짝홀에 따라 마지막 index가 달라짐.
+        while (j > 0) {
+            printf("j : %d, key : %lld, value : %s\n", j, buffer[j].key, buffer[j].value);
+            fflush((stdout));
+            ret = db_insert(buffer[j].key, buffer[j].value);
+            j -= 2;
+        }
+        bufferSize = 0;
+    }
+    return ret;
+}
 
 H_P * load_header(off_t off) {
     H_P * newhp = (H_P*)calloc(1, sizeof(H_P));
@@ -31,7 +86,7 @@ int open_table(char * pathname) {
     fd = open(pathname, O_RDWR | O_CREAT | O_EXCL | O_SYNC  , 0775);
     hp = (H_P *)calloc(1, sizeof(H_P));
     if (fd > 0) {
-        //printf("New File created\n");
+        printf("New File created\n");
         hp->fpo = 0;
         hp->num_of_pages = 1;
         hp->rpo = 0;
@@ -42,7 +97,7 @@ int open_table(char * pathname) {
     }
     fd = open(pathname, O_RDWR|O_SYNC);
     if (fd > 0) {
-        //printf("Read Existed File\n");
+        printf("Read Existed File\n");
         if (sizeof(H_P) > pread(fd, hp, sizeof(H_P), 0)) {
             return -1;
         }

@@ -10,7 +10,7 @@ int main(){
         switch(instruction){
             case 'i':
                 scanf("%ld %s", &input, buf);
-                db_insert(input, buf);
+                bf_insert(input, buf);
                 break;
             case 'f':
                 scanf("%ld", &input);

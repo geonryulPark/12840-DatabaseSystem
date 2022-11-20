@@ -12,8 +12,9 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <string.h>
-#define LEAF_MAX 31
+#define LEAF_MAX 4
 #define INTERNAL_MAX 248
+#define BUFFER_MAX 8
 
 typedef struct record{
     int64_t key;
@@ -33,7 +34,7 @@ typedef struct Page{
     off_t next_offset;
     union{
         I_R b_f[248];
-        record records[31];
+        record records[30];
     };
 }page;
 
@@ -80,6 +81,13 @@ void coalesce_pages(off_t will_be_coal, int nbor_index, off_t nbor_off, off_t pa
 void adjust_root(off_t deloff);
 void remove_entry_from_page(int64_t key, off_t deloff);
 void usetofree(off_t wbf);
+
+// 추가한 함수
+int compare(const void *one, const void *two); // qsort 함수 사용
+bool isInBuffer(const record *, int bufferSize, int64_t key);
+int bf_insert(int64_t key, char *value);
+int bf_delete(int64_t key);
+char* bf_find(int64_t key);
 
 #endif /* __BPT_H__*/
 
