@@ -14,7 +14,7 @@ int main(){
                 break;
             case 'f':
                 scanf("%ld", &input);
-                result = db_find(input);
+                result = bf_find(input);
                 if (result) {
                     printf("Key: %ld, Value: %s\n", input, result);
                 }
@@ -25,7 +25,7 @@ int main(){
                 break;
             case 'd':
                 scanf("%ld", &input);
-                db_delete(input);
+                bf_delete(input);
                 break;
             case 'q':
                 while (getchar() != (int)'\n');

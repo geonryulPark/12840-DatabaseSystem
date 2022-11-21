@@ -4,45 +4,198 @@ H_P * hp;
 
 page * rt = NULL; //root is declared as global
 
-int fd = -1; //fd is declared as global
-
+AVLTree bufferTree = NULL;
 record buffer[BUFFER_MAX+1];
 int bufferSize = 0;
 
-int compare(const void *one, const void *two) {
-    record *ptOne = (record *)one;
-    record *ptTwo = (record *)two;
+int fd = -1; //fd is declared as global
 
-    if (ptOne->key > ptTwo->key)
-        return 1;
-    else if (ptOne->key < ptTwo->key) 
+// AVL tree implementation
+
+int max(int a, int b) {
+    return a >= b ? a : b;
+}
+
+int Height(Position node) {
+    if (node == NULL)
         return -1;
-    else return 0;
+    return node->height;
 }
 
-bool isInBuffer(const record *records, int size, int64_t key) {
-    for (int i = 0; i < size; i++) {
-        if (key == records[i].key) return true;
-    }
-    return false;
+AVLTree FindMin(AVLTree T) {
+    if (T == NULL) return NULL;
+    if (T->left == NULL) return T;
+    return FindMin(T->left);
 }
+
+Position SingleRotateWithLeft(Position node) { // Start rotation from Left
+    Position k2 = node;
+    Position k1 = node->left;
+    k2->left = k1->right;
+    k1->right = k2;
+
+    k2->height = max(Height(k2->left), Height(k2->right)) + 1;
+    k1->height = max(Height(k1->left), Height(k1->right)) + 1;
+
+    return k1;
+}
+
+Position SingleRotateWithRight(Position node) {
+    Position k2 = node;
+    Position k1 = node->right;
+    k2->right = k1->left;
+    k1->left = k2;
+
+    k2->height = max(Height(k2->left), Height(k2->right)) + 1;
+    k1->height = max(Height(k1->left), Height(k1->right)) + 1;
+
+    return k1;
+}
+
+Position DoubleRotateWithLeft(Position node) { // Rotate right subtree of left child
+    node->left = SingleRotateWithRight(node->left);
+    return SingleRotateWithLeft(node);
+}
+
+Position DoubleRotateWithRight(Position node) {
+    node->right = SingleRotateWithLeft(node->right);
+    return SingleRotateWithRight(node);
+}
+
+AVLTree Insert(int64_t key, char *value, AVLTree T) {
+    if (T == NULL) { // 노드가 트리에 없으면 -> 만드는 과정
+        T = (AVLTree)malloc(sizeof(AVLNode));
+        if (T == NULL) {
+            return T;
+        }
+        T->element.key = key;
+        strcpy(T->element.value, value);
+        T->height = 0;
+        T->left = T->right = NULL;
+    } else if (T->element.key == key) { // 이미 해당 노드가 트리에 존재하면,
+        return T;
+    } else if (key < T->element.key) { // 지금보다 왼쪽에 있어야 하면,
+        T->left = Insert(key, value, T->left);
+        if (Height(T->left) - Height(T->right) >= 2) { // 어차피 왼쪽에 넣었으므로 왼쪽 height가 클 수 밖에 없다.
+            // 기준에 어긋나면,
+            if (key < T->left->element.key) { // 다음 노드의 숫자를 비교하여 LL인지 LR인지 비교할 수 있다.
+                T = SingleRotateWithLeft(T);
+            } else {
+                T = DoubleRotateWithLeft(T);
+            }
+        }
+    } else if (key > T->element.key) {
+        T->right = Insert(key, value, T->right);
+        if (Height(T->right) - Height(T->left) >= 2) {
+            if (key > T->right->element.key) {
+                T = SingleRotateWithRight(T);
+            } else {
+                T = DoubleRotateWithRight(T);
+            }
+        }
+    }
+
+    T->height = max(Height(T->left), Height(T->right)) + 1;
+    return T;
+}
+
+AVLTree Delete(int64_t key, AVLTree T) {
+    if (T == NULL) {
+        return T;
+    } else if (key == T->element.key) { // 지워야 하는 대상을 찾은 상태
+        if (T->left != NULL && T->right != NULL) { // 대상 노드가 왼쪽 오른쪽 둘 다 child가 있을 때,
+            Position tmp = FindMin(T->right);
+            T->element = tmp->element;
+            T->right = Delete(tmp->element.key, T->right);
+        } else { // 아닐 때, : 한 쪽에만 있을 때
+            Position tmp = T;
+            if (T->left == NULL) { // left child가 없을 때 : right child만 있을 때
+                T = T->right;
+            } else {
+                T = T->left;
+            }
+            bufferSize--;
+            free(tmp);
+        }
+    } else if (key < T->element.key) {
+        T->left = Delete(key, T->left);
+        if (Height(T->right) - Height(T->left) >= 2) { // 왼쪽을 없앴으므로 오른쪽이 더 무거워진다.
+            if (Height(T->right->right) >= Height(T->right->left)) {
+                T = SingleRotateWithRight(T);
+            } else {
+                T = DoubleRotateWithRight(T);
+            }
+        }
+    } else if (key > T->element.key) {
+        T->right = Delete(key, T->right);
+        if (Height(T->left) - Height(T->right) >= 2) { // 오른쪽을 없앴으므로 왼쪽이 더 무거워진다.
+            if (Height(T->left->left) >= Height(T->left->right)) { // 왼쪽의 왼쪽이 더 무거움 : LL
+                T = SingleRotateWithLeft(T);
+            } else { // RL
+                T = DoubleRotateWithLeft(T);
+            }
+        }
+    }
+
+    if (T != NULL) // 삭제한 노드가 leaf node면 height를 대입할 수 없다.
+        T->height = max(Height(T->left), Height(T->right)) + 1;
+    return T;
+}
+
+void PopAllNode(AVLTree T) {
+    if (T == NULL) return;
+    PopAllNode(T->left);
+    buffer[bufferSize].key = T->element.key;
+    strcpy(buffer[bufferSize].value, T->element.value);
+    bufferSize++;
+    PopAllNode(T->right);
+}
+
+char * Find(int64_t key, AVLTree T) {
+    if (T == NULL) return NULL;
+    if (key == T->element.key) {
+        return T->element.value;
+    } else if (key < T->element.key) {
+        return Find(key, T->left);
+    } else {
+        return Find(key, T->right);
+    }
+}
+
+void PrintInorder(AVLTree T) {
+    if (T == NULL) return;
+    PrintInorder(T->left);
+    printf("key : %lld, value : %s\n ", T->element.key, T->element.value);
+    PrintInorder(T->right);
+}
+
+
+void DeleteTree(AVLTree T) {
+    if (T == NULL) return;
+    DeleteTree(T->left);
+    DeleteTree(T->right);
+    free(T);
+    T = NULL;
+}
+
 
 int bf_insert(int64_t key, char *value) {
     int ret = -1;
     if (bufferSize < BUFFER_MAX) {
         // just put in buffer
         // 중복은 넣지 않아야 한다.
-        if (!isInBuffer(buffer, bufferSize, key)) {
-            buffer[bufferSize].key = key;
-            strcpy(buffer[bufferSize].value, value);
-            bufferSize++;
+        bufferTree = Insert(key, value, bufferTree);
+        bufferSize++;
             ret = 0;
         }
-    }
+
     if (bufferSize == BUFFER_MAX) {
         // flush to b+tree
-        qsort(buffer, bufferSize, sizeof(record), compare);
-        bufferSize--; // index로 활용하기 위해서 1을 감소시켰다.
+        bufferSize = 0;
+        PopAllNode(bufferTree);
+        DeleteTree(bufferTree);
+
+        bufferSize--;
         int i = 0;
         while (i <= bufferSize) {
             printf("i : %d, key : %lld, value : %s\n", i, buffer[i].key, buffer[i].value);
@@ -58,8 +211,27 @@ int bf_insert(int64_t key, char *value) {
             j -= 2;
         }
         bufferSize = 0;
+        bufferTree = NULL;
     }
     return ret;
+}
+
+char* bf_find(int64_t key) {
+    // 우선 buffer 내에 있는지 탐색
+    // buffer에 존재하지 않으면 동일 key에 대해 db_find 결과를 return
+    char *result = Find(key, bufferTree);
+    return result ? result : db_find(key);
+}
+
+int bf_delete(int64_t key) {
+    if (Find(key, bufferTree)) {
+        bufferTree = Delete(key, bufferTree);
+        printf("delete in memory\n");
+        return 1;
+    } else {
+        printf("delete in disk\n");
+        return db_delete(key);
+    }
 }
 
 H_P * load_header(off_t off) {
@@ -829,6 +1001,7 @@ void remove_entry_from_page(int64_t key, off_t deloff) {
     }
     
 }//fin
+
 
 
 

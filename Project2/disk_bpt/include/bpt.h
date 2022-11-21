@@ -45,6 +45,18 @@ typedef struct Header_Page{
     char reserved[4072];
 }H_P;
 
+struct AVLNode;
+typedef struct AVLNode *Position;
+typedef struct AVLNode *AVLTree;
+typedef record ElementType;
+
+typedef struct AVLNode
+{
+    ElementType element;
+    AVLTree left, right;
+    int height;
+}AVLNode;
+
 
 extern int fd;
 
@@ -84,10 +96,25 @@ void usetofree(off_t wbf);
 
 // 추가한 함수
 int compare(const void *one, const void *two); // qsort 함수 사용
-bool isInBuffer(const record *, int bufferSize, int64_t key);
+char* isInBuffer(const record *, int bufferSize, int64_t key);
 int bf_insert(int64_t key, char *value);
 int bf_delete(int64_t key);
 char* bf_find(int64_t key);
+
+// AVL tree
+int max(int a, int b);
+int Height(Position node);
+AVLTree FindMin(AVLTree T);
+AVLTree Insert(int64_t key, char *value, AVLTree T);
+AVLTree Delete(int64_t key, AVLTree T);
+Position SingleRotateWithLeft(Position node);
+Position SingleRotateWithRight(Position node);
+Position DoubleRotateWithLeft(Position node);
+Position DoubleRotateWithRight(Position node);
+char * Find(int64_t key, AVLTree T);
+void PopAllNode(AVLTree T);
+void PrintInorder(AVLTree T);
+void DeleteTree(AVLTree T);
 
 #endif /* __BPT_H__*/
 
