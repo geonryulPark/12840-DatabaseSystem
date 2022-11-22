@@ -11,7 +11,6 @@ int bufferSize = 0;
 int fd = -1; //fd is declared as global
 
 // AVL tree implementation
-
 int max(int a, int b) {
     return a >= b ? a : b;
 }
@@ -226,10 +225,10 @@ char* bf_find(int64_t key) {
 int bf_delete(int64_t key) {
     if (Find(key, bufferTree)) {
         bufferTree = Delete(key, bufferTree);
-        printf("delete in memory\n");
+//        printf("delete in memory\n");
         return 1;
     } else {
-        printf("delete in disk\n");
+//        printf("delete in disk\n");
         return db_delete(key);
     }
 }
