@@ -27,11 +27,14 @@ int main(){
                 scanf("%ld", &input);
                 bf_delete(input);
                 break;
+            case 'p':
+                bf_flush();
+                break;
             case 'q':
                 while (getchar() != (int)'\n');
+                bf_flush();
                 return EXIT_SUCCESS;
-                break;   
-
+                break;
         }
         while (getchar() != (int)'\n');
     }

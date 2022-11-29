@@ -100,6 +100,7 @@ char* isInBuffer(const record *, int bufferSize, int64_t key);
 int bf_insert(int64_t key, char *value);
 int bf_delete(int64_t key);
 char* bf_find(int64_t key);
+void bf_flush(void);
 
 // AVL tree
 int max(int a, int b);

@@ -190,27 +190,7 @@ int bf_insert(int64_t key, char *value) {
 
     if (bufferSize == BUFFER_MAX) {
         // flush to b+tree
-        bufferSize = 0;
-        PopAllNode(bufferTree);
-        DeleteTree(bufferTree);
-
-        bufferSize--;
-        int i = 0;
-        while (i <= bufferSize) {
-            printf("i : %d, key : %lld, value : %s\n", i, buffer[i].key, buffer[i].value);
-            fflush(stdout);
-            ret = db_insert(buffer[i].key, buffer[i].value);
-            i += 2;
-        }
-        int j = bufferSize % 2 ? bufferSize : bufferSize - 1; // 개수가 짝홀에 따라 마지막 index가 달라짐.
-        while (j > 0) {
-            printf("j : %d, key : %lld, value : %s\n", j, buffer[j].key, buffer[j].value);
-            fflush((stdout));
-            ret = db_insert(buffer[j].key, buffer[j].value);
-            j -= 2;
-        }
-        bufferSize = 0;
-        bufferTree = NULL;
+        bf_flush();
     }
     return ret;
 }
@@ -223,14 +203,39 @@ char* bf_find(int64_t key) {
 }
 
 int bf_delete(int64_t key) {
-    if (Find(key, bufferTree)) {
-        bufferTree = Delete(key, bufferTree);
-//        printf("delete in memory\n");
+    if (Find(key, bufferTree)) { // 만약 버퍼 내에 있는 key 라면,
+        bufferTree = Delete(key, bufferTree); // 버퍼 내에서만 지우고 종료한다.
+        printf("delete operation in memory\n");
         return 1;
     } else {
-//        printf("delete in disk\n");
+        printf("delete operation in disk\n"); // 버퍼 내에 없는 원소를 지우려 한다면 실제로 b+tree에 있을 수 있으므로
+        // db_delete(key)를 실행한다.
         return db_delete(key);
     }
+}
+
+void bf_flush(void) {
+    bufferSize = 0;
+    PopAllNode(bufferTree);
+    DeleteTree(bufferTree);
+
+    bufferSize--;
+    int i = 0;
+    while (i <= bufferSize) {
+        printf("i : %d, key : %lld, value : %s\n", i, buffer[i].key, buffer[i].value);
+        fflush(stdout);
+        db_insert(buffer[i].key, buffer[i].value);
+        i += 2;
+    }
+    int j = bufferSize % 2 ? bufferSize : bufferSize - 1; // 개수가 짝홀에 따라 마지막 index가 달라짐.
+    while (j > 0) {
+        printf("j : %d, key : %lld, value : %s\n", j, buffer[j].key, buffer[j].value);
+        fflush((stdout));
+        db_insert(buffer[j].key, buffer[j].value);
+        j -= 2;
+    }
+    bufferSize = 0;
+    bufferTree = NULL;
 }
 
 H_P * load_header(off_t off) {
