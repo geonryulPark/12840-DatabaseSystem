@@ -1,0 +1,3 @@
+/Users/baggeonlyul/12840-DatabaseSystem/(Ass2)problem/case1/cmake-build-debug/CMakeFiles/case1.dir
+/Users/baggeonlyul/12840-DatabaseSystem/(Ass2)problem/case1/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/baggeonlyul/12840-DatabaseSystem/(Ass2)problem/case1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
