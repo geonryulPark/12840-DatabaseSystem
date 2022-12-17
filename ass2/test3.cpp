@@ -68,7 +68,7 @@ int hashingName(string name) {
     for (int i = 0; i < name.length(); i++) {
         hashCode += name[i] * pow(26, i);
     }
-    return hashCode % 27;
+    return hashCode % 1000;
 }
 
 int isValid(name_grade temp0, name_grade temp1) {
